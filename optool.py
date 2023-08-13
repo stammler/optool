@@ -110,9 +110,8 @@ class particle:
              The angular grid
         materials : [[[...]...]... ]
              Lists with [location,m_{frac},\rho,material
-        m : float[nlam, 2]
-             Optical constants 
-             n + i*k = m[:, 0] + i*m[:, 1]
+        m : float[nlam]
+             Optical constants
         np : int
              Number of particles, either 1 or (with -d) n_a
         fmax : float[np]
@@ -250,8 +249,9 @@ class particle:
             tmp = np.fromfile(file, dtype=float, sep=" ")
             self.nlam = int(tmp[0])
             self.rho = tmp[1]
-            self.m = np.delete(tmp[2:].reshape((self.nlam, 3)), 0, axis=1)
-            self.lam = np.delete(tmp[2:].reshape((self.nlam, 3)), [1, 2], axis=1)[:, 0]
+            arr = tmp[2:].reshape((self.nlam, 3))
+            self.m = arr[:, 1] + 1.j*arr[:, 2]
+            self.lam = arr[:, 0]
 
             # If OpTool was run with -w do not try to read opacity files
             if "-w" not in cmd:

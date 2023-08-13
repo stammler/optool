@@ -598,7 +598,7 @@ $n_p=1$. The resulting object will have the following attributes:
 | =scatang=          | =float[nang]=         | The angular grid                                  |
 |--------------------+-----------------------+---------------------------------------------------|
 | =materials=        | =[[[...]...]... ]=    | Lists with [location,m_{frac},\rho,material]      |
-| =m=                | =[nlam, 2]=           | Optical constants of blended material m[0]+i*m[1] |
+| =m=                | =[nlam]=              | Optical constants of blended material             |
 |--------------------+-----------------------+---------------------------------------------------|
 | =np=               | =int=                 | Number of particles, either 1 or (with -d) n_a    |
 |--------------------+-----------------------+---------------------------------------------------|
