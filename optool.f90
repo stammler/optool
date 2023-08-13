@@ -127,14 +127,15 @@ module Defs
   ! ----------------------------------------------------------------------
   ! The output directory and other strings
   ! ----------------------------------------------------------------------
-  character*500                  :: outdir = ''    ! Output directory
-  character*500                  :: sdfile = ''    ! Size distribution file
-  character*500                  :: sdoutfile = '' ! Size distribution file
-  character*500                  :: lamoutfile = ''! Size distribution file
-  real (kind=dp)                 :: ameans_file(3) ! for size means from file
-  character*3                    :: method         ! DHS or MMF
-  character*4                    :: sdkind         ! apow, lgnm, norm, or file
-  character*1                    :: justnum = ' '  ! What to print to STDOUT
+  character*500                  :: outdir = ''       ! Output directory
+  character*500                  :: sdfile = ''       ! Size distribution file
+  character*500                  :: sdoutfile = ''    ! Size distribution file
+  character*500                  :: lamoutfile = ''   ! Size distribution file
+  character*500                  :: blendoutfile = '' ! Blended optical constants file
+  real (kind=dp)                 :: ameans_file(3)    ! for size means from file
+  character*3                    :: method            ! DHS or MMF
+  character*4                    :: sdkind            ! apow, lgnm, norm, or file
+  character*1                    :: justnum = ' '     ! What to print to STDOUT
 end module Defs
 
 !!! **** Main program and ComputePart
@@ -916,6 +917,7 @@ program optool
   fitsfile       = make_file_path(outdir,"dustkappa.fits")
   sdoutfile      = make_file_path(outdir,"optool_sd.dat")
   lamoutfile     = make_file_path(outdir,"optool_lam.dat")
+  blendoutfile   = make_file_path(outdir,"optool_mix.lnk")
 
   ! ----------------------------------------------------------------------
   ! Default grain composition if nothing is specified
@@ -1490,16 +1492,15 @@ subroutine ComputePart(p,isplit,amin,amax,apow,amean,asig,na,fmax,mmf_a0,mmf_str
   ! ----------------------------------------------------------------------
   ! Write the derived n and k to a file, or to STDOUT
   ! ----------------------------------------------------------------------
-  if (blendonly) then
-     if (.not. quiet) write(stde,'("Writing the blended n and k to blended.lnk")')
-     call remove_file_if_exists('optool_mix.lnk')
-     open(unit=20,file='optool_mix.lnk')
-     write(20,'(i5,f5.2)') nlam,rho_av
-     do ilam=1,nlam
-        write(20,'(1p,e15.5,1p,e15.5,1p,e15.5)') lam(ilam),e1blend(ilam),e2blend(ilam)
-     enddo
-     close(unit=20)
-  endif
+  if (.not. quiet) write(stde,'("Writing the blended n and k to optool_mix.lnk")')
+  call remove_file_if_exists(blendoutfile)
+  open(unit=20,file=blendoutfile)
+  write(20,'(i5,f5.2)') nlam,rho_av
+  do ilam=1,nlam
+     write(20,'(1p,e15.5,1p,e15.5,1p,e15.5)') lam(ilam),e1blend(ilam),e2blend(ilam)
+  enddo
+  close(unit=20)
+
   if (justnum .eq. 'l') then
      write(stde,'(" nlam     rho")')
      write(stde,'("-------------")')

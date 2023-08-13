@@ -79,6 +79,7 @@ import matplotlib.pyplot as plt
 import math as m
 import re
 import os
+from pathlib import Path
 import subprocess
 from distutils.spawn import find_executable
 import tempfile
@@ -109,6 +110,9 @@ class particle:
              The angular grid
         materials : [[[...]...]... ]
              Lists with [location,m_{frac},\rho,material
+        m : float[nlam, 2]
+             Optical constants 
+             n + i*k = m[:, 0] + i*m[:, 1]
         np : int
              Number of particles, either 1 or (with -d) n_a
         fmax : float[np]
@@ -240,60 +244,71 @@ class particle:
                 stdout = subprocess.DEVNULL if silent else None
                 stderr = subprocess.DEVNULL if silent else None
                 cmd[0] = bin; subprocess.Popen(cmd, stdout=stdout, stderr=stderr).wait()
-            
-            # Check if there is output we can use
-            scat,ext = check_for_output(dir)
-            self.scat = scat
-            self.massscale = 1.
-    
-            kabs=[]; ksca=[]; kext=[]; gg=[]
-            f11=[]; f12=[]; f22=[]; f33=[]; f34=[]; f44=[]
-            nfiles=0; header=[];
-            materials = []
-            rho = []
-            
-            for i in range(5000):
-                if scat:
-                    file = ("%s/dustkapscatmat_%03d.%s") % (dir,(i+1),ext)
-                else:
-                    file = ("%s/dustkappa_%03d.%s") % (dir,(i+1),ext)
-                if (not os.path.exists(file)): break
-                nfiles = nfiles+1
-                x = readoutputfile(file,scat,silent=silent)
-                header.append(x[0])
-                lam = x[1]
-                kabs.append(x[2])
-                ksca.append(x[3])
-                kext.append(x[2]+x[3])
-                gg.append(x[4])
-                if scat:
-                    scatang = x[5]
-                    f11.append(x[6])
-                    f12.append(x[7])
-                    f22.append(x[8])
-                    f33.append(x[9])
-                    f34.append(x[10])
-                    f44.append(x[11])
-                    self.scat = scat
-                self = parse_headers(header,self)
-                self.nlam = len(lam)
-                self.kabs = np.array(kabs)
-                self.ksca = np.array(ksca)
-                self.kext = np.array(kext)
-                self.gsca = np.array(gg)
-                self.lam  = lam
-                if scat:
-                    self.nang = len(scatang)
-                    self.scatang = scatang
-                    self.f11  = np.array(f11)
-                    self.f12  = np.array(f12)
-                    self.f22  = np.array(f22)
-                    self.f33  = np.array(f33)
-                    self.f34  = np.array(f34)
-                    self.f44  = np.array(f44)
-                else:
-                    self.nang = 0
-            self.np = nfiles
+
+            # Read optical constants and wavelength grid
+            file = Path(dir).joinpath("optool_mix.lnk")
+            tmp = np.fromfile(file, dtype=float, sep=" ")
+            self.nlam = int(tmp[0])
+            self.rho = tmp[1]
+            self.m = np.delete(tmp[2:].reshape((self.nlam, 3)), 0, axis=1)
+            self.lam = np.delete(tmp[2:].reshape((self.nlam, 3)), [1, 2], axis=1)[:, 0]
+
+            # If OpTool was run with -w do not try to read opacity files
+            if "-w" not in cmd:
+
+                # Check if there is output we can use
+                scat,ext = check_for_output(dir)
+                self.scat = scat
+                self.massscale = 1.
+        
+                kabs=[]; ksca=[]; kext=[]; gg=[]
+                f11=[]; f12=[]; f22=[]; f33=[]; f34=[]; f44=[]
+                nfiles=0; header=[];
+                materials = []
+                rho = []
+
+                for i in range(5000):
+                    if scat:
+                        file = ("%s/dustkapscatmat_%03d.%s") % (dir,(i+1),ext)
+                    else:
+                        file = ("%s/dustkappa_%03d.%s") % (dir,(i+1),ext)
+                    if (not os.path.exists(file)): break
+                    nfiles = nfiles+1
+                    x = readoutputfile(file,scat,silent=silent)
+                    header.append(x[0])
+                    lam = x[1]
+                    kabs.append(x[2])
+                    ksca.append(x[3])
+                    kext.append(x[2]+x[3])
+                    gg.append(x[4])
+                    if scat:
+                        scatang = x[5]
+                        f11.append(x[6])
+                        f12.append(x[7])
+                        f22.append(x[8])
+                        f33.append(x[9])
+                        f34.append(x[10])
+                        f44.append(x[11])
+                        self.scat = scat
+                    self = parse_headers(header,self)
+                    self.nlam = len(lam)
+                    self.kabs = np.array(kabs)
+                    self.ksca = np.array(ksca)
+                    self.kext = np.array(kext)
+                    self.gsca = np.array(gg)
+                    self.lam  = lam
+                    if scat:
+                        self.nang = len(scatang)
+                        self.scatang = scatang
+                        self.f11  = np.array(f11)
+                        self.f12  = np.array(f12)
+                        self.f22  = np.array(f22)
+                        self.f33  = np.array(f33)
+                        self.f34  = np.array(f34)
+                        self.f44  = np.array(f44)
+                    else:
+                        self.nang = 0
+                self.np = nfiles
         finally:
             if cache:
                 if not silent:
