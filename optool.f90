@@ -564,20 +564,18 @@ program optool
            write(stde,*) "         MMF matrix elements when the phase shift is too large. See UserGuide."
            mmfss = .true.
         endif
+        ! Defaults
+        mmf_a0 = 0.1d0
+        mmf_struct = 0.2d0
+        mmf_kf = 0.d0
         if (arg_is_1_number(i+1)) then
            i=i+1; call getarg(i,value); call uread(value,mmf_a0)
            if (arg_is_1_number(i+1)) then
               i=i+1; call getarg(i,value); read(value,*) mmf_struct
               if (arg_is_1_number(i+1)) then
                  i=i+1; call getarg(i,value); read(value,*) mmf_kf
-              else
-                 mmf_kf = 0
               endif
-           else
-              mmf_struct = 0.2  ! default is a filling factor of 20%
            endif
-        else
-           mmf_a0 = 0.1d0
         endif
      case('-cde')
         method = 'CDE'
